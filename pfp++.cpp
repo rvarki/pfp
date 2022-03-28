@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     {
         // Set tmp file dir
         if (tmp_dir != "") { vcfbwt::TempFile::setDirectory(tmp_dir); }
-        
+
         int last_genotype = 0;
         if ( haplotype_string == "2" or haplotype_string == "12" )
             last_genotype = 1;

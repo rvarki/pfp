@@ -56,6 +56,7 @@ private:
     const std::string& reference_;
     const std::vector<Variation>& variations_list;
     
+
     std::size_t offset_ = 0;
     std::size_t ref_index_ = 0;
     
@@ -75,7 +76,7 @@ public:
     void set_ploidy(int ploidy) { this->max_ploidy = ploidy; }
     void update_ploidy(int ploidy) { this->max_ploidy = std::max(this->max_ploidy, ploidy); }
     int get_ploidy() const { return this->max_ploidy; }
-    
+
     // variation, variation type
     std::vector<std::size_t> variations;
     std::vector<std::vector<int>> genotypes;
@@ -149,7 +150,7 @@ public:
         std::size_t get_ref_it() const { return ref_it_ - 1; } // -1 because the iterator is pointing the next one
         std::size_t next_variation() const;
         std::size_t next_variation_distance() const;
-        std::size_t prev_variation() const;
+        std::size_t prev_variation_end() const;
         
         std::size_t length() const { return contig_length_; }
     };
@@ -252,6 +253,7 @@ public:
     
     static const std::string vcf_freq;
 
+
     VCF(const std::string &ref_path, const std::string &vcf_path, const std::string &samples_path, const size_t w, const int last_genotype = 0, std::size_t ms = 0) : max_samples(ms)
     {
         if (samples_path != "") { init_samples(samples_path); }
@@ -261,6 +263,7 @@ public:
 
         this->samples.at(populated_samples.back()).set_last(last_genotype);
     }
+
 
     VCF(const std::vector<std::string> &refs_path, const std::vector<std::string> &vcfs_path, const std::string &samples_path, const size_t w, const int last_genotype = 0, std::size_t ms = 0) : max_samples(ms)
     {

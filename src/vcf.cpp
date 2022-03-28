@@ -57,10 +57,10 @@ vcfbwt::Contig::iterator::next_variation() const
 }
 
 std::size_t
-vcfbwt::Contig::iterator::prev_variation() const
+vcfbwt::Sample::iterator::prev_variation_end() const
 {
-    if (var_it_ == 0) { spdlog::error("vcfbwt::Contig::iterator::prev_variation() var_it == 0"); std::exit(EXIT_FAILURE); }
-    return contig_.get_variation(prev_variation_it).pos;
+    if (var_it_ == 0) { spdlog::error("vcfbwt::Sample::iterator::prev_variation() var_it == 0"); std::exit(EXIT_FAILURE); }
+    return sample_.get_variation(prev_variation_it).pos + sample_.get_variation(prev_variation_it).ref_len;
 }
 
 std::size_t
@@ -101,6 +101,7 @@ vcfbwt::Contig::iterator::operator++()
             // Check length of unchanged bases
             int start = 0;
             int len = curr_variation.alt[var_genotype].size();
+
             assert ( len >= gap );
             while ( start < std::min(gap,len) && curr_variation.alt[var_genotype][start] == curr_variation.alt[0][start]) ++start;
             if (start < gap)
@@ -323,6 +324,9 @@ vcfbwt::VCF::init_vcf(const std::string& vcf_path,
         bcf_hdr_destroy(hdr);
         std::exit(EXIT_FAILURE);
     }
+
+    std::vector<std::vector<int>> tppos(1, std::vector<int>(n_samples,0));
+    std::vector<std::vector<bool>> prev_is_ins(1, std::vector<bool>(n_samples,false));
     
     int rid = -1; // Current contig id in the vcf file;
     std::string contig_name = ""; // Current contig name in the vcf file;
@@ -387,6 +391,11 @@ vcfbwt::VCF::init_vcf(const std::string& vcf_path,
         if ( ngt > 0 )
         {
             int max_ploidy = ngt/n_samples;
+            while (max_ploidy > tppos.size())
+            {
+                tppos.push_back(std::vector<int>(n_samples,0));
+                prev_is_ins.push_back(std::vector<bool>(n_samples,false));
+            }
             bool skip_this_variation = false;
             while (max_ploidy > tppos.size())
             {
@@ -411,7 +420,8 @@ vcfbwt::VCF::init_vcf(const std::string& vcf_path,
                     {
                         // the VCF 0-based allele index
                         int allele_index = bcf_gt_allele(ptr[j]);
-                        
+                        int var_type = bcf_get_variant_type(rec, allele_index);
+
                         assert( var.types[allele_index] == bcf_get_variant_type(rec, allele_index) );
 
                         // Determine if overlap. Logic copied from leviosam's: 
@@ -422,21 +432,20 @@ vcfbwt::VCF::init_vcf(const std::string& vcf_path,
                         // For some variant types POS+REF refer to the base *before* the event; in such case set trim_beg
                         int trim_beg = 0;
                         int var_len  = rec->d.var[allele_index].n;
-                        if ( var.types[allele_index] & VCF_INDEL ) trim_beg = 1;
-                        else if ( (var.types[allele_index] & VCF_OTHER) && !strcasecmp(rec->d.allele[allele_index],"<DEL>") ) {
+                        if ( var_type & VCF_INDEL ) trim_beg = 1;
+                        else if ( (var_type & VCF_OTHER) && !strcasecmp(rec->d.allele[allele_index],"<DEL>") ) {
                             trim_beg = 1;
                             var_len  = 1 - var.ref_len;
                         }
-                        else if ( (var.types[allele_index] & VCF_OTHER) && !strncasecmp(rec->d.allele[allele_index],"<INS",4) )
+                        else if ( (var_type & VCF_OTHER) && !strncasecmp(rec->d.allele[allele_index],"<INS",4) )
                             trim_beg = 1;
 
-                        // TODO: Replace rec->pos with var.pos when including multiple reference parses.
+
                         if (rec->pos <= tppos[j][i_s]) {
                             int overlap = 0;
                             if ( rec->pos < tppos[j][i_s] || !trim_beg || var_len==0 || prev_is_ins[j][i_s] ) overlap = 1;
                             if (overlap) {
-                                // if (verbose) fprintf(stderr, "Skipping variant %s:%lld\n", bcf_seqname(hdr, rec), rec->pos + 1);
-                                spdlog::debug("vcfbwt::VCF::init_vcf: Skipping overlapping variantat sample {} in pos {}", hdr->samples[i_s], var.pos);
+                                spdlog::debug("vcfbwt::VCF::init_vcf: Skipping overlapping variantat sample {} in pos {}", i_s, var.pos);
                                 continue;
                             }
                         }
