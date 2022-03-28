@@ -57,10 +57,10 @@ vcfbwt::Contig::iterator::next_variation() const
 }
 
 std::size_t
-vcfbwt::Sample::iterator::prev_variation_end() const
+vcfbwt::Contig::iterator::prev_variation_end() const
 {
     if (var_it_ == 0) { spdlog::error("vcfbwt::Sample::iterator::prev_variation() var_it == 0"); std::exit(EXIT_FAILURE); }
-    return sample_.get_variation(prev_variation_it).pos + sample_.get_variation(prev_variation_it).ref_len;
+    return contig_.get_variation(prev_variation_it).pos + contig_.get_variation(prev_variation_it).ref_len;
 }
 
 std::size_t
@@ -325,9 +325,6 @@ vcfbwt::VCF::init_vcf(const std::string& vcf_path,
         std::exit(EXIT_FAILURE);
     }
 
-    std::vector<std::vector<int>> tppos(1, std::vector<int>(n_samples,0));
-    std::vector<std::vector<bool>> prev_is_ins(1, std::vector<bool>(n_samples,false));
-    
     int rid = -1; // Current contig id in the vcf file;
     std::string contig_name = ""; // Current contig name in the vcf file;
     size_t contig_id = 0; // Current contig id in the vcf file;

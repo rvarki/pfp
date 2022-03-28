@@ -272,7 +272,7 @@ vcfbwt::pfp::ParserVCF::operator()(const vcfbwt::Sample& sample)
             // Compute where we are on the reference
             std::size_t pos_on_reference = contig_iterator.get_ref_it();
             
-            if ( not ((sample_iterator.get_var_it() > 0) and (sample_iterator.prev_variation_end() > (pos_on_reference - (2 * this->w)))))
+            if ( not ((contig_iterator.get_var_it() > 0) and (contig_iterator.prev_variation_end() > (pos_on_reference - (2 * this->w)))))
             {
                 // Set start postion to the position in the reference parse after the last computed phrase
                 if (params.use_acceleration and ((phrase.size() == this->w) and ((pos_on_reference != 0) and (phrase[0] != DOLLAR_PRIME))))
