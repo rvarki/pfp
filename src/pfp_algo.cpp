@@ -38,6 +38,8 @@ vcfbwt::pfp::Dictionary::add(const std::string& phrase)
     DictionaryEntry entry(phrase);
     hash_string_map.insert(std::make_pair(phrase_hash, entry));
 
+    // std::cerr << phrase_hash << " " << entry.phrase << std::endl;
+
     if (this->size() >= (std::numeric_limits<size_type>::max() - insertions_safe_guard))
     { spdlog::error("Dictionary too big for type {}", typeid(size_type).name()); std::exit(EXIT_FAILURE); }
     
@@ -65,6 +67,8 @@ vcfbwt::pfp::Dictionary::check_and_add(const std::string &phrase)
 
     DictionaryEntry entry(phrase);
     hash_string_map.insert(std::make_pair(phrase_hash, entry));
+
+    // std::cerr << phrase_hash << " " << entry.phrase << std::endl;
 
     if (this->size() >= (std::numeric_limits<size_type>::max() - insertions_safe_guard))
     { spdlog::error("Dictionary too big for type {}", typeid(size_type).name()); std::exit(EXIT_FAILURE); }
@@ -186,7 +190,7 @@ vcfbwt::pfp::ReferenceParse::init(const std::string& reference, bool first)
     }
     
     // Last phrase
-    if (phrase.size() > this->params.w)
+    if (phrase.size() >= this->params.w)
     {
         // Append w-1 dollar prime and 1 dollar sequence at the end, reference as the first sample
         phrase.append(this->params.w - 1, DOLLAR_PRIME);
@@ -336,8 +340,10 @@ vcfbwt::pfp::ParserVCF::operator()(const vcfbwt::Sample& sample)
             }
         }
 
+        assert(contig_iterator.length() == (contig_iterator.get_sam_it() - 1)); // -1 because of the last voi itration
+
         // Last phrase
-        if (phrase.size() > this->w)
+        if (phrase.size() >= this->w)
         {
             // Append w dollar prime at the end of each sample, also w DOLLAR if it's the last sample
             phrase.append(this->w - 1, DOLLAR_PRIME);
@@ -397,6 +403,7 @@ vcfbwt::pfp::ParserVCF::operator()(const vcfbwt::Sample& sample)
                 length += this->params.w - 1;
             const std::string contig_name = sample.id() + "_H" + std::to_string(this->working_genotype + 1) + "_" + contig.id();
             out_len << contig_name << " " << length << std::endl;
+            // std::cerr << contig_name << " " << length << std::endl;
         }
     }
 }
@@ -606,12 +613,12 @@ vcfbwt::pfp::ParserVCF::close()
             std::vector<std::string> names;
 
             // Reading the lengths
+            std::string tmp_name;
+            std::size_t tmp_length;
+            // while (not in_lidx.eof()) 
             std::ifstream in_lidx(out_len_name);
-            while (not in_lidx.eof()) 
+            while (in_lidx >> tmp_name >> tmp_length )
             { 
-                std::string tmp_name;
-                std::size_t tmp_length;
-                in_lidx >> tmp_name >> tmp_length;
                 if (tmp_name != "")
                 {
                     u += tmp_length;
@@ -1164,6 +1171,34 @@ vcfbwt::pfp::ParserUtils::read_dictionary(std::string dic_file_name, std::vector
             phrase.push_back(c);
         }
         if (phrase.size() != 0) { dictionary_vector.push_back(phrase); }
+    }
+}
+
+void vcfbwt::pfp::ParserUtils::read_compressed_dictionary(std::string dic_file_name, std::string len_file_name, std::vector<std::string> &dictionary_vector)
+{
+    std::ifstream dic_file(dic_file_name);
+    if (not dic_file.is_open()) { spdlog::error("Error opening file: {}", dic_file_name); std::exit(EXIT_FAILURE); }
+    std::ifstream len_file(len_file_name);
+    if (not len_file.is_open()) { spdlog::error("Error opening file: {}", len_file_name); std::exit(EXIT_FAILURE); }
+
+    std::streampos fsize = len_file.tellg();
+    len_file.seekg(0, std::ios::end);
+    fsize = len_file.tellg() - fsize;
+    len_file.seekg(0, std::ios::beg);
+
+    size_t n_phrases = fsize/4;
+    if ((fsize % 4) != 0) { spdlog::error("Invalid file: {}", len_file_name); std::exit(EXIT_FAILURE); }
+
+    dictionary_vector.reserve(n_phrases);
+
+    for( size_t i = 0; i < n_phrases; ++i)
+    {
+        int32_t len = 0;
+        std::string phrase = "";
+        len_file.read((char*)&len, sizeof(int32_t));
+        phrase.resize(len);
+        dic_file.read(phrase.data(), len);
+        dictionary_vector.push_back(phrase);
     }
 }
 
