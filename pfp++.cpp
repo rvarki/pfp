@@ -10,6 +10,20 @@
 #include <vcf.hpp>
 #include <pfp_algo.hpp>
 
+struct HaplotypeValidator : public CLI::Validator {
+    HaplotypeValidator() {
+        name_ = "HAPLOTYPE";
+        func_ = [](const std::string &str) {
+            if(str != "1" || str != "2" || str != "12" )
+                return std::string("Invalid Haplotype! Allowed haplotypes are 1,2,12.");
+            else
+                return std::string();
+        };
+    }
+};
+const static HaplotypeValidator Haplotype;
+
+
 int main(int argc, char **argv)
 {
     CLI::App app("PFP++");
@@ -33,7 +47,7 @@ int main(int argc, char **argv)
     app.add_option("-v,--vcf", vcfs_file_names, "List of vcf files. Assuming in genome order!")->allow_extra_args(true)->configurable();
     app.add_option("-r,--ref", refs_file_names, "List of reference files. Assuming in genome order!")->allow_extra_args(true)->configurable();
     app.add_option("-f,--fasta", fasta_file_path, "Fasta file to parse.")->configurable()->check(CLI::ExistingFile);
-    app.add_option("-H,--haplotype", haplotype_string, "Haplotype. [1,2,12]")->configurable();
+    app.add_option("-H,--haplotype", haplotype_string, "Haplotype. [1,2,12]")->configurable()->check(Haplotype);
     app.add_option("-t,--text", text_file_path, "Text file to parse.")->configurable()->check(CLI::ExistingFile);
     app.add_option("-o,--out-prefix", out_prefix, "Output prefix")->configurable();
     app.add_option("-m, --max", max_samples, "Max number of samples to analyze")->configurable();
@@ -158,6 +172,9 @@ int main(int argc, char **argv)
                 spdlog::info("Processing sample [{}/{} H{}]: {}", i, vcf.size(), 2, vcf[i].id());
                 workers[this_thread](vcf[i]);
             }
+        }else{
+            spdlog::error("Invalid haplotype: ", haplotype_string, ".\nAllowed haplotypes are 1,2,12.");
+            std::exit(EXIT_FAILURE);
         }
         
     
