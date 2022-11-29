@@ -610,6 +610,7 @@ vcfbwt::pfp::ParserVCF::close()
             std::vector<size_t> onset(1,0);
             std::vector<size_t> lengths;
             size_t u = 0;            
+            size_t w = this->params.w;            
             std::vector<std::string> names;
 
             // Reading the lengths
@@ -639,6 +640,7 @@ vcfbwt::pfp::ParserVCF::close()
             sdsl::sd_vector<>::select_1_type select1(&starts);
             // Writing the seqidx on disk
             merged.write((char *)&u, sizeof(u));
+            merged.write((char *)&w, sizeof(w));
 
             starts.serialize(merged);
             sdsl::serialize(names.size(), merged);
