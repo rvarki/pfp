@@ -253,6 +253,32 @@ private:
     std::string out_file_name;
     std::string in_file_path;
     std::vector<std::string> sequences_processed;
+
+    std::ofstream out_lift;
+    std::string out_lift_prefix;
+    std::string out_lift_name;
+    std::string tmp_out_lift_name;
+
+    std::ofstream out_len;
+    std::string out_len_prefix;
+    std::string out_len_name;
+    std::string tmp_out_len_name;
+
+    std::string reference; // TODO: Replace it with as many parses as references.
+    std::vector<std::string> references;
+    std::vector<std::string> references_name;
+    std::unordered_map<std::string, std::size_t> references_id;
+    
+    std::vector<std::vector<Variation>> variations;
+    std::vector<Contig> contigs;
+    std::vector<Sample> samples;
+    std::unordered_map<std::string, std::size_t> samples_id;
+    
+    std::size_t max_samples = 0;
+    std::set<std::string> input_samples;
+    std::vector<std::size_t> populated_samples;
+
+    std::vector<std::size_t> ref_sum_lengths;
     
     Params params;
     Statistics statistics;
@@ -267,6 +293,8 @@ private:
 public:
     
     void init(const Params& params, const std::string& prefix);
+
+    void init_ref(const std::string& ref_path, const size_t w, bool last);
     
     ParserFasta(const Params& params, const std::string& file_path, const std::string& out_prefix)
     {

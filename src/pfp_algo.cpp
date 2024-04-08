@@ -765,6 +765,53 @@ vcfbwt::pfp::ParserFasta::init(const Params& params, const std::string& prefix)
     this->out_file_prefix = prefix;
     this->out_file_name = prefix + EXT::PARSE;
     this->out_file.open(out_file_name);
+    this->out_lift_name = out_file_prefix + EXT::LIFTING;
+    this->out_len_name = out_file_prefix + EXT::LENGTHS;
+
+    if(params.compute_lifting)
+    {
+        init_ref(this->in_file_path, this->w, true);
+    }
+}
+
+void
+vcfbwt::pfp::ParserFasta::init_ref(const std::string& ref_path, const size_t w, bool last)
+{
+    spdlog::info("Reading reference file: {}", ref_path);
+    std::ifstream in_stream(ref_path);
+    if (not vcfbwt::is_gzipped(in_stream))
+    {
+        spdlog::error("Reference file expected gzip compressed");
+        std::exit(EXIT_FAILURE);
+    }
+    
+    zstr::istream is(in_stream);
+    std::string line;
+    
+    while (getline(is, line)) 
+    { 
+        // TODO: Remove the second reference append when we can use multiple ReferenceParses.
+        if ( not (line.empty() or line[0] == '>') ) { this->references.back().append(line); this->reference.append(line); } 
+        else 
+        { 
+            // Update lengths
+            if( this->ref_sum_lengths.size() > 1 ) this->ref_sum_lengths.push_back(this->ref_sum_lengths.back());
+            else this->ref_sum_lengths.push_back(0);
+            if(this->references.size()>0) this->ref_sum_lengths.back() += this->references.back().size() + w; // The +w is for the separator that has to be counted in the offset
+            // Create the new reference
+            std::string name = "";
+            for (size_t i = 1; i < line.size(); name.push_back(line[i++]))
+                if (isspace(line[i])) break;
+            // line.substr(1, line.find(' ') - 1); // -1 to remove the space
+            spdlog::info("Read contig {}.", name);
+            // TODO: store also the description
+            this->references_id.insert(std::make_pair(name, this->references.size())); 
+            this->references_name.push_back(name); 
+            this->references.push_back(""); 
+        }
+    }
+    if (not last) reference.push_back(pfp::SPECIAL_TYPES::DOLLAR_PRIME);
+    spdlog::info("Done reading {}", ref_path);
 }
 
 void
@@ -963,6 +1010,100 @@ vcfbwt::pfp::ParserFasta::close()
         occ.close();
     }
 
+    // Merging the length components
+    if (params.report_lengths or params.compute_lifting)
+    {
+        std::ofstream merged(out_len_name);
+
+        // Reference
+        for(int i = 0; i < this->references.size(); i++)
+        {
+            // Include the last w characters at the end of each contig
+            const size_t length = this->references[i].size() + this->params.w;
+            const std::string contig_name = this->references_name[i];
+            merged << contig_name << " " << length << std::endl;
+        }
+
+        vcfbwt::DiskWrites::update(merged.tellp()); // Disk Stats
+        merged.close();
+    }
+
+    // Merging the lifting components
+    if (params.compute_lifting)
+    {
+        //Opens output lift file name as merged 
+        std::ofstream merged(out_lift_name, std::ios_base::binary);
+
+        // if compute_lifting => report_lengths
+        std::vector<size_t> onset(1,0);
+        std::vector<size_t> lengths;
+        size_t u = 0;            
+        size_t w = this->params.w;            
+        std::vector<std::string> names;
+
+        // Reading the lengths
+        std::string tmp_name;
+        std::size_t tmp_length;
+        // while (not in_lidx.eof()) 
+        std::ifstream in_lidx(out_len_name);
+        while (in_lidx >> tmp_name >> tmp_length )
+        { 
+            if (tmp_name != "")
+            {
+                u += tmp_length;
+                names.push_back(tmp_name);
+                lengths.push_back(tmp_length);
+                onset.push_back(u);
+            }
+        }
+        ++u;
+        in_lidx.close();
+        // Build the seqidx structure
+        sdsl::sd_vector_builder builder(u, onset.size());
+        for (auto idx : onset)
+            builder.set(idx);
+
+        sdsl::sd_vector<> starts(builder);
+        sdsl::sd_vector<>::rank_1_type rank1(&starts);
+        sdsl::sd_vector<>::select_1_type select1(&starts);
+        // Writing the seqidx on disk
+        merged.write((char *)&u, sizeof(u));
+        merged.write((char *)&w, sizeof(w));
+
+        starts.serialize(merged);
+        sdsl::serialize(names.size(), merged);
+        for(size_t i = 0; i < names.size(); ++i)
+        {
+            sdsl::serialize(names[i].size(), merged);
+            merged.write((char *)names[i].data(), names[i].size());
+        }
+
+        size_t n_contigs = 0;
+        n_contigs += this->references.size();
+        // Write the total number of contigs
+        merged.write((char *)&n_contigs, sizeof(n_contigs));
+
+        // Build the empty liftings for the references
+        size_t clen = 0;
+        for(size_t i = 0; i < this->references.size(); ++i)
+        {
+            const size_t len = references[i].size();
+
+            sdsl::bit_vector ibv(len);
+            sdsl::bit_vector dbv(len);
+            sdsl::bit_vector sbv(len);
+
+            lift::Lift lift(ibv, dbv, sbv); 
+
+            sdsl::serialize(clen, merged);
+            lift.serialize(merged);  
+
+            clen += len;       
+        }
+
+        vcfbwt::DiskWrites::update(merged.tellp()); // Disk Stats
+        merged.close();
+    }
 }
 
 //------------------------------------------------------------------------------
