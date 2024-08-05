@@ -137,13 +137,13 @@ target_link_libraries(unit_tests64 pfp64 ${VCF_LIB_DEPS})
 
 # 32 and 64 bits parse
 add_executable(pfp++ pfp++.cpp)
-target_compile_options(pfp++ PRIVATE -fsanitize=thread -fsanitize=address -fsanitize=undefined)
-target_link_options(pfp++ PRIVATE -fsanitize=thread -fsanitize=address -fsanitize=undefined)
+target_compile_options(pfp++ PRIVATE -fsanitize=thread -fsanitize=undefined)
+target_link_options(pfp++ PRIVATE -fsanitize=thread -fsanitize=undefined)
 target_link_libraries(pfp++ pfp ${VCF_LIB_DEPS})
 
 add_executable(pfp++64 pfp++.cpp)
-target_compile_options(pfp++64 PRIVATE "-DPFP_LONG_TYPE=ON" -fsanitize=thread -fsanitize=address -fsanitize=undefined)
-target_link_options(pfp++64 PRIVATE -fsanitize=thread -fsanitize=address -fsanitize=undefined)
+target_compile_options(pfp++64 PRIVATE "-DPFP_LONG_TYPE=ON" -fsanitize=thread -fsanitize=undefined)
+target_link_options(pfp++64 PRIVATE -fsanitize=thread -fsanitize=undefined)
 target_link_libraries(pfp++64 pfp64 ${VCF_LIB_DEPS})
 
 # AuPair
