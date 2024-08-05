@@ -6,9 +6,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Define an option to enable ThreadSanitizer
-option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
-
 ################################################################################
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -140,21 +137,14 @@ target_link_libraries(unit_tests64 pfp64 ${VCF_LIB_DEPS})
 
 # 32 and 64 bits parse
 add_executable(pfp++ pfp++.cpp)
+target_compile_options(pfp++ PRIVATE -fsanitize=thread -fsanitize=address -fsanitize=undefined)
+target_link_options(pfp++ PRIVATE -fsanitize=thread -fsanitize=address -fsanitize=undefined)
 target_link_libraries(pfp++ pfp ${VCF_LIB_DEPS})
-if(ENABLE_TSAN)
-    message(STATUS "TSAN ENABLED for pfp++")
-    target_compile_options(pfp++ PRIVATE -fsanitize=thread)
-    target_link_libraries(pfp++ -fsanitize=thread)
-endif()
 
 add_executable(pfp++64 pfp++.cpp)
-target_compile_options(pfp++64 PRIVATE "-DPFP_LONG_TYPE=ON")
+target_compile_options(pfp++64 PRIVATE "-DPFP_LONG_TYPE=ON" -fsanitize=thread -fsanitize=address -fsanitize=undefined)
+target_link_options(pfp++64 PRIVATE -fsanitize=thread -fsanitize=address -fsanitize=undefined)
 target_link_libraries(pfp++64 pfp64 ${VCF_LIB_DEPS})
-if (ENABLE_TSAN)
-    message(STATUS "TSAN ENABLED for pfp++64")
-    target_compile_options(pfp++64 PRIVATE -fsanitize=thread)
-    target_link_libraries(pfp++64 -fsanitize=thread)
-endif()
 
 # AuPair
 add_executable(AuPair au_pair.cpp)
