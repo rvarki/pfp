@@ -73,6 +73,7 @@ endif()
 
 # HTS
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+find_package(ZLIB REQUIRED)
 find_package(HTSlib REQUIRED)
 if(HTSlib_FOUND)
     include_directories(${HTSlib_INCLUDE_DIRS})
@@ -104,13 +105,13 @@ endif()
 ################################################################################
 # Lib
 
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/thirdparty)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated)
 
-file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
-file(GLOB MALLOC_COUNT_SOURCES ${CMAKE_SOURCE_DIR}/thirdparty/malloc_count/*.c)
-file(GLOB MURMUR_SOURCES ${CMAKE_SOURCE_DIR}/thirdparty/murmur/*.cpp)
+file(GLOB SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
+file(GLOB MALLOC_COUNT_SOURCES ${CMAKE_CURRENT_LIST_DIR}/thirdparty/malloc_count/*.c)
+file(GLOB MURMUR_SOURCES ${CMAKE_CURRENT_LIST_DIR}/thirdparty/murmur/*.cpp)
 
 # 32 and 64 bits parse
 add_library(pfp ${SOURCES} ${MALLOC_COUNT_SOURCES} ${MURMUR_SOURCES})
@@ -119,7 +120,7 @@ target_link_libraries(pfp lvsam)
 target_link_libraries(pfp64 lvsam)
 target_compile_options(pfp64 PRIVATE "-DPFP_LONG_TYPE=ON")
 
-set(VCF_LIB_DEPS ${HTSlib_LIBRARIES} dl pthread lvsam)# ssl crypto)
+set(VCF_LIB_DEPS ${HTSlib_LIBRARIES} ${ZLIB_LIBRARIES} dl pthread lvsam)# ssl crypto)
 
 ################################################################################
 # Tests
