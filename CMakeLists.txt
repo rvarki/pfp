@@ -162,11 +162,11 @@ add_executable(vcf_to_fa vcf_to_fa.cpp)
 target_link_libraries(vcf_to_fa pfp ${VCF_LIB_DEPS})
 
 # Unparse
-add_executable(unparse unparse.cpp)
-target_link_libraries(unparse pfp ${VCF_LIB_DEPS})
-add_executable(unparse64 unparse.cpp)
-target_compile_options(unparse64 PRIVATE "-DPFP_LONG_TYPE=ON")
-target_link_libraries(unparse64 pfp64 ${VCF_LIB_DEPS})
+add_executable(pfp++_unparse unparse.cpp)
+target_link_libraries(pfp++_unparse pfp ${VCF_LIB_DEPS})
+add_executable(pfp++64_unparse unparse.cpp)
+target_compile_options(pfp++64_unparse PRIVATE "-DPFP_LONG_TYPE=ON")
+target_link_libraries(pfp++64_unparse pfp64 ${VCF_LIB_DEPS})
 
 # Integrity Check
 add_executable(check check_integrity.cpp)
@@ -175,4 +175,4 @@ add_executable(check64 check_integrity.cpp)
 target_compile_options(check64 PRIVATE "-DPFP_LONG_TYPE=ON")
 target_link_libraries(check64 pfp64 ${VCF_LIB_DEPS})
 
-install(TARGETS pfp++ pfp++64 AuPair AuPair64 mpfp++ mpfp++64 unparse unparse64 check check64 TYPE RUNTIME)
+install(TARGETS pfp++ pfp++64 AuPair AuPair64 mpfp++ mpfp++64 pfp++_unparse pfp++64_unparse check check64 TYPE RUNTIME)
