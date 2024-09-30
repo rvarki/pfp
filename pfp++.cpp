@@ -98,12 +98,12 @@ int main(int argc, char **argv)
         if ( haplotype_string == "2" or haplotype_string == "12" )
             last_genotype = 1;
 
-        // Parse the VCF
-        vcfbwt::VCF vcf(refs_file_names, vcfs_file_names, samples_file_name, params.w, last_genotype, max_samples);
-    
         // Set threads accordingly to configuration
         omp_set_num_threads(threads);
 
+        // Parse the VCF
+        vcfbwt::VCF vcf(refs_file_names, vcfs_file_names, samples_file_name, params.w, last_genotype, max_samples);
+    
         // Create a dictionary common to all references
         vcfbwt::pfp::Dictionary dictionary;
 
