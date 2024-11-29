@@ -110,12 +110,11 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 file(GLOB SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
-file(GLOB MALLOC_COUNT_SOURCES ${CMAKE_CURRENT_LIST_DIR}/thirdparty/malloc_count/*.c)
 file(GLOB MURMUR_SOURCES ${CMAKE_CURRENT_LIST_DIR}/thirdparty/murmur/*.cpp)
 
 # 32 and 64 bits parse
-add_library(pfp ${SOURCES} ${MALLOC_COUNT_SOURCES} ${MURMUR_SOURCES})
-add_library(pfp64 ${SOURCES} ${MALLOC_COUNT_SOURCES} ${MURMUR_SOURCES})
+add_library(pfp ${SOURCES} ${MURMUR_SOURCES})
+add_library(pfp64 ${SOURCES} ${MURMUR_SOURCES})
 target_link_libraries(pfp lvsam)
 target_link_libraries(pfp64 lvsam)
 target_compile_options(pfp64 PRIVATE "-DPFP_LONG_TYPE=ON")
